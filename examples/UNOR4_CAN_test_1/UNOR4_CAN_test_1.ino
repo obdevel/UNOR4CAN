@@ -1,8 +1,6 @@
 
 #include <UNOR4CAN.h>
 
-// void user_callback_handler(can_callback_args_t *p_args);
-
 volatile bool  new_msg_available = false;
 volatile can_frame_t imsg;
 
@@ -41,7 +39,7 @@ void loop(void) {
   int r;
   can_frame_t omsg;
 
-  // a ne CAN message has been received
+  // a new CAN message has been received
   if (new_msg_available) {
     new_msg_available = false;
     Serial.println(format_can_message((const can_frame_t *)&imsg));
