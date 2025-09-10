@@ -8,31 +8,36 @@
  * published by the Free Software Foundation.
  */
 
-/**************************************************************************************
- * INCLUDE
- **************************************************************************************/
+/// CAN error codes
 
+// FSP_ERR_CAN_DATA_UNAVAILABLE   = 60000,          ///< No data available.
+// FSP_ERR_CAN_MODE_SWITCH_FAILED = 60001,          ///< Switching operation modes failed.
+// FSP_ERR_CAN_INIT_FAILED        = 60002,          ///< Hardware initialization failed.
+// FSP_ERR_CAN_TRANSMIT_NOT_READY = 60003,          ///< Transmit in progress.
+// FSP_ERR_CAN_RECEIVE_MAILBOX    = 60004,          ///< Mailbox is setup as a receive mailbox.
+// FSP_ERR_CAN_TRANSMIT_MAILBOX   = 60005,          ///< Mailbox is setup as a transmit mailbox.
+// FSP_ERR_CAN_MESSAGE_LOST       = 60006,          ///< Receive message has been overwritten or overrun.
+// FSP_ERR_CAN_TRANSMIT_FIFO_FULL = 60007,          ///< Transmit FIFO is full.
+
+///
 
 #include "UNOR4CAN.h"
 #include <IRQManager.h>
-
-#define CAN_DEFAULT_MASK                    (0x1FFFFFFFU)
-
-extern "C" void can_callback2(can_callback_args_t *p_args);
-
-///
 
 #include "CanUtil.h"
 
 ///
 
-UNOR4CAN::UNOR4CAN(int const can_tx_pin, int const can_rx_pin)
-  : _can_tx_pin{can_tx_pin}
-  , _can_rx_pin{can_rx_pin}
-    // , _is_error{false}
-    // , _err_code{0}
-//  , _can_rx_buf{}
-  , _can_bit_timing_cfg{}
+extern "C" void can_callback2(can_callback_args_t *p_args);
+
+/// constructor
+
+UNOR4CAN::UNOR4CAN()
+  :
+  // , _is_error{false}
+  // , _err_code{0}
+  // , _can_rx_buf{}
+  _can_bit_timing_cfg {}
   , _can_mailbox_mask {
   0,
   0,
@@ -50,40 +55,40 @@ UNOR4CAN::UNOR4CAN(int const can_tx_pin, int const can_rx_pin)
   { .mailbox_id =  2, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_TRANSMIT},
   { .mailbox_id =  3, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_TRANSMIT},
   /* Mailbox Group #1 */
-  { .mailbox_id =  4, .id_mode = CAN_ID_MODE_EXTENDED, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_TRANSMIT},
-  { .mailbox_id =  5, .id_mode = CAN_ID_MODE_EXTENDED, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_TRANSMIT},
-  { .mailbox_id =  6, .id_mode = CAN_ID_MODE_EXTENDED, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_TRANSMIT},
-  { .mailbox_id =  7, .id_mode = CAN_ID_MODE_EXTENDED, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_TRANSMIT},
+  { .mailbox_id =  4, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_TRANSMIT},
+  { .mailbox_id =  5, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_TRANSMIT},
+  { .mailbox_id =  6, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_TRANSMIT},
+  { .mailbox_id =  7, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_TRANSMIT},
   /* Mailbox Group #2 */
   { .mailbox_id =  8, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_REMOTE, .mailbox_type = CAN_MAILBOX_TRANSMIT},
   { .mailbox_id =  9, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_REMOTE, .mailbox_type = CAN_MAILBOX_TRANSMIT},
   { .mailbox_id = 10, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_REMOTE, .mailbox_type = CAN_MAILBOX_TRANSMIT},
   { .mailbox_id = 11, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_REMOTE, .mailbox_type = CAN_MAILBOX_TRANSMIT},
   /* Mailbox Group #3 */
-  { .mailbox_id = 12, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_TRANSMIT},
-  { .mailbox_id = 13, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_TRANSMIT},
-  { .mailbox_id = 14, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_TRANSMIT},
-  { .mailbox_id = 15, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_TRANSMIT},
+  { .mailbox_id = 12, .id_mode = CAN_ID_MODE_EXTENDED, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_TRANSMIT},
+  { .mailbox_id = 13, .id_mode = CAN_ID_MODE_EXTENDED, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_TRANSMIT},
+  { .mailbox_id = 14, .id_mode = CAN_ID_MODE_EXTENDED, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_TRANSMIT},
+  { .mailbox_id = 15, .id_mode = CAN_ID_MODE_EXTENDED, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_TRANSMIT},
   /* Mailbox Group #4 */
   { .mailbox_id =  0, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_RECEIVE },
   { .mailbox_id =  1, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_RECEIVE },
   { .mailbox_id =  2, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_RECEIVE },
   { .mailbox_id =  3, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_RECEIVE },
   /* Mailbox Group #5 */
-  { .mailbox_id =  4, .id_mode = CAN_ID_MODE_EXTENDED, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_RECEIVE },
-  { .mailbox_id =  5, .id_mode = CAN_ID_MODE_EXTENDED, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_RECEIVE },
-  { .mailbox_id =  6, .id_mode = CAN_ID_MODE_EXTENDED, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_RECEIVE },
-  { .mailbox_id =  7, .id_mode = CAN_ID_MODE_EXTENDED, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_RECEIVE },
+  { .mailbox_id =  4, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_RECEIVE },
+  { .mailbox_id =  5, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_RECEIVE },
+  { .mailbox_id =  6, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_RECEIVE },
+  { .mailbox_id =  7, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_RECEIVE },
   /* Mailbox Group #6 */
   { .mailbox_id =  8, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_REMOTE, .mailbox_type = CAN_MAILBOX_RECEIVE },
   { .mailbox_id =  9, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_REMOTE, .mailbox_type = CAN_MAILBOX_RECEIVE },
   { .mailbox_id = 10, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_REMOTE, .mailbox_type = CAN_MAILBOX_RECEIVE },
   { .mailbox_id = 11, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_REMOTE, .mailbox_type = CAN_MAILBOX_RECEIVE },
   /* Mailbox Group #7 */
-  { .mailbox_id = 12, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_RECEIVE },
-  { .mailbox_id = 13, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_RECEIVE },
-  { .mailbox_id = 14, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_RECEIVE },
-  { .mailbox_id = 15, .id_mode = CAN_ID_MODE_STANDARD, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_RECEIVE }
+  { .mailbox_id = 12, .id_mode = CAN_ID_MODE_EXTENDED, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_RECEIVE },
+  { .mailbox_id = 13, .id_mode = CAN_ID_MODE_EXTENDED, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_RECEIVE },
+  { .mailbox_id = 14, .id_mode = CAN_ID_MODE_EXTENDED, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_RECEIVE },
+  { .mailbox_id = 15, .id_mode = CAN_ID_MODE_EXTENDED, .frame_type = CAN_FRAME_TYPE_DATA, .mailbox_type = CAN_MAILBOX_RECEIVE }
 }
 , _can_extended_cfg {
   .clock_source   = CAN_CLOCK_SOURCE_PCLKB,
@@ -91,7 +96,8 @@ UNOR4CAN::UNOR4CAN(int const can_tx_pin, int const can_rx_pin)
   .p_mailbox      = _can_mailbox,
   .global_id_mode = CAN_GLOBAL_ID_MODE_MIXED,
   .mailbox_count  = CAN_MAX_NO_MAILBOXES,
-  .message_mode   = CAN_MESSAGE_MODE_OVERWRITE,
+  // .message_mode   = CAN_MESSAGE_MODE_OVERWRITE,
+  .message_mode   = CAN_MESSAGE_MODE_OVERRUN,
   .p_fifo_int_cfg = nullptr,
   .p_rx_fifo_cfg  = nullptr,
 }
@@ -107,36 +113,67 @@ UNOR4CAN::UNOR4CAN(int const can_tx_pin, int const can_rx_pin)
   .tx_irq         = FSP_INVALID_VECTOR,
 }
 {
+}
+
+/// destructor
+
+UNOR4CAN::~UNOR4CAN() {
 
 }
+
+/// begin
 
 bool UNOR4CAN::begin(void) {
 
   bool init_ok = true, r;
 
+  if (debug) {
+    Serial.println("DRVR: begin");
+    Serial.println("DRVR: configuring pins");
+    Serial.flush();
+  }
+
   // configure the TX and RX pins
-  int const max_index = g_pin_cfg_size / sizeof(g_pin_cfg[0]);
-  r = cfg_pins(max_index, _can_tx_pin, _can_rx_pin);
+  // pins are fixed: tx = 4, rx = 5
 
-  // Serial.print("> cfg_pins returns ");
-  // Serial.println(r);
+  int const max_index = PINS_COUNT;
+  init_ok &= cfg_pins(max_index, PIN_CAN0_TX, PIN_CAN0_RX);
 
-  init_ok &= r;
+  if (debug) {
+    Serial.print("DRVR: cfg_pins returns ");
+    Serial.println(init_ok);
+    Serial.print("DRVR: tx = ");
+    Serial.print(PIN_CAN0_TX);
+    Serial.print(", rx = ");
+    Serial.println(PIN_CAN0_RX);
+    Serial.flush();
+  }
 
-  // configure interrupt
+  // install interrupt
+
   CanIrqReq_t irq_req {
     .ctrl = &_can_ctrl,
     .cfg = &_can_cfg,
   };
 
-  r =  IRQManager::getInstance().addPeripheral(IRQ_CAN, &irq_req);
+  r = IRQManager::getInstance().addPeripheral(IRQ_CAN, &irq_req);
 
-  // Serial.print("> irq config returns ");
-  // Serial.println(r);
+  if (debug) {
+    Serial.print("DRVR: irq config returns ");
+    Serial.println(r);
+    Serial.flush();
+  }
 
   init_ok &= r;
 
   // calculate the CAN timing parameters
+
+  if (debug) {
+    Serial.print("DRVR: calculating timing parameters for baudrate = ");
+    Serial.println(can_bitrate);
+    Serial.flush();
+  }
+
   static uint32_t const F_CAN_CLK_Hz = 24 * 1000 * 1000UL;
   static uint32_t const TQ_MIN     = 8;
   static uint32_t const TQ_MAX     = 25;
@@ -149,8 +186,11 @@ bool UNOR4CAN::begin(void) {
     util::calc_can_bit_timing(can_bitrate, F_CAN_CLK_Hz, TQ_MIN, TQ_MAX, TSEG_1_MIN, TSEG_1_MAX, TSEG_2_MIN, TSEG_2_MAX);
   init_ok &= is_valid_baudrate;
 
-  // Serial.print("> baud rate set returns ");
-  // Serial.println(is_valid_baudrate);
+  if (debug) {
+    Serial.print("DRVR: baud rate set returns ");
+    Serial.println(is_valid_baudrate);
+    Serial.flush();
+  }
 
   if (is_valid_baudrate) {
     _can_bit_timing_cfg.baud_rate_prescaler = baud_rate_prescaler;
@@ -159,24 +199,37 @@ bool UNOR4CAN::begin(void) {
     _can_bit_timing_cfg.synchronization_jump_width = 1;
   }
 
-  // initialize the peripheral's FSP driver
-  if (R_CAN_Open(&_can_ctrl, &_can_cfg) != FSP_SUCCESS) {
-    init_ok = false;
-    Serial.println("> R_CAN_Open fail");
-  } else {
-    // Serial.println("> R_CAN_Open ok");
+  if (debug) {
+    Serial.println("DRVR: calling R_CAN_Open");
+    Serial.flush();
   }
 
-  // Serial.print("> begin returns ");
-  // Serial.println(init_ok);
+  fsp_err_t open_r;
+
+  // initialize the peripheral's FSP driver
+  if ((open_r = R_CAN_Open(&_can_ctrl, &_can_cfg)) != FSP_SUCCESS) {
+    init_ok = false;
+  }
+
+  if (debug) {
+    Serial.print("DRVR: R_CAN_Open returns ");
+    Serial.println(open_r);
+    Serial.print("DRVR: begin returning ");
+    Serial.println(init_ok);
+    Serial.flush();
+  }
 
   return init_ok;
 }
+
+/// end
 
 void UNOR4CAN::end() {
 
   R_CAN_Close(&_can_ctrl);
 }
+
+/// enable/disable loopback mode
 
 int UNOR4CAN::enableInternalLoopback() {
 
@@ -194,38 +247,138 @@ int UNOR4CAN::disableInternalLoopback() {
   return 1;
 }
 
+/// send a CAN message
+
 int UNOR4CAN::send(can_frame_t *msg) {
 
-  if (fsp_err_t const rc = R_CAN_Write(&_can_ctrl, CAN_MAILBOX_ID_0, msg); rc != FSP_SUCCESS)
-    return -rc;
+  // transmit mailboxes
+  // 0-7   - standard
+  // 8-11  - remote
+  // 12-15 - extended
 
-  return 1;
+  static uint32_t next_extended_mbx = 12, next_rtr_mbx = 8, next_standard_mbx = 0;
+
+  uint32_t selected_mbx;
+  fsp_err_t rc;
+
+  // select the transmit mailbox to use
+  // round-robin over the set of allocated mailboxs, according to message type
+
+  if (msg->id_mode == CAN_ID_MODE_EXTENDED) {                                            // extended messages x4, 12-15
+    selected_mbx = next_extended_mbx;
+    next_extended_mbx = (next_extended_mbx == 15 ? 12 : next_extended_mbx + 1);
+
+    if (debug) {
+      Serial.print("DRVR: using extended mailbox = ");
+      Serial.println(selected_mbx);
+    }
+
+  } else if (msg->type == CAN_FRAME_TYPE_REMOTE) {                                       // remote (RTR) messages x4, 8-11
+    selected_mbx = next_rtr_mbx;
+    next_rtr_mbx = (next_rtr_mbx == 11 ? 8 : next_rtr_mbx + 1);
+
+    if (debug) {
+      Serial.print("DRVR: using remote mailbox = ");
+      Serial.println(selected_mbx);
+    }
+
+  } else {                                                                               // standard messages x8, 0-7
+    selected_mbx = next_standard_mbx;
+    next_standard_mbx = (next_standard_mbx == 7 ? 0 : next_standard_mbx + 1);
+
+    if (debug) {
+      Serial.print("DRVR: using standard mailbox = ");
+      Serial.println(selected_mbx);
+    }
+  }
+
+  rc = R_CAN_Write(&_can_ctrl, selected_mbx, msg);
+
+  if (debug) {
+    Serial.print("DRVR: R_CAN_Write returns ");
+    Serial.println(rc);
+    Serial.flush();
+  }
+
+  return (rc == FSP_SUCCESS);
 }
+
+/// called from CAN interrupt to surface events
 
 void UNOR4CAN::onCanCallback2(can_callback_args_t *p_args) {
 
-  // Serial.println("> callback runs");
-
   if (user_callback) {
-    // Serial.println("> calling user callback handler");
     (void)(*user_callback)(p_args);
-  } else {
-    Serial.println("> no user callback handler");
   }
-}
 
-void UNOR4CAN::set_can_bitrate(CanBitRate bitrate) {
-
-  // Serial.println("> setting bitrate");
-  can_bitrate = bitrate;
   return;
 }
 
+/// set the CAN bitrate
+
+void UNOR4CAN::set_can_bitrate(const CanBitRate bitrate) {
+
+  set_can_bitrate(static_cast<int32_t>(bitrate));
+  return;
+}
+
+void UNOR4CAN::set_can_bitrate(const uint32_t bitrate) {
+
+  can_bitrate = bitrate;
+
+  if (debug) {
+    Serial.print("DRVR: set bitrate = ");
+    Serial.println(bitrate);
+    Serial.flush();
+  }
+
+  return;
+}
+
+/// set the CAN callback
+
 void UNOR4CAN::set_callback(void (*fptr)(can_callback_args_t *event)) {
 
-  // Serial.println("> setting user callback handler");
   user_callback = fptr;
+  return;
 }
+
+/// set debug output state
+
+void UNOR4CAN::set_debug(const bool state) {
+
+  debug = state;
+
+  if (debug) {
+    Serial.println("DRVR: debug is on");
+    Serial.flush();
+  }
+
+  return;
+}
+
+/// get CAN stats
+/// fsp_err_t R_CAN_InfoGet(can_ctrl_t * const p_api_ctrl, can_info_t * const p_info);
+
+bool UNOR4CAN::get_stats(can_info_t *pstats) {
+
+  fsp_err_t ok;
+
+  if (debug) {
+    Serial.print("DRVR: getting CAN driver stats ... ");
+    Serial.flush();
+  }
+
+  ok = R_CAN_InfoGet(&_can_ctrl, pstats);
+
+  if (debug) {
+    Serial.println((ok == FSP_SUCCESS ? "ok" : "fail"));
+    Serial.flush();
+  }
+
+  return (ok == FSP_SUCCESS);
+}
+
 
 /**************************************************************************************
  * PRIVATE MEMBER FUNCTIONS
@@ -262,9 +415,9 @@ bool UNOR4CAN::cfg_pins(int const max_index, int const can_tx_pin, int const can
   return true;
 }
 
-extern "C" void can_callback2(can_callback_args_t * p_args)
+extern "C" void can_callback2(can_callback_args_t *p_args)
 {
-  UNOR4CAN * this_ptr = (UNOR4CAN *)(p_args->p_context);
+  UNOR4CAN *this_ptr = (UNOR4CAN *)(p_args->p_context);
   this_ptr->onCanCallback2(p_args);
 }
 
