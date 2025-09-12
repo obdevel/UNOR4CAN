@@ -316,12 +316,6 @@ void UNOR4CAN::onCanCallback2(can_callback_args_t *p_args) {
 
 /// set the CAN bitrate
 
-void UNOR4CAN::set_can_bitrate(const CanBitRate bitrate) {
-
-  set_can_bitrate(static_cast<int32_t>(bitrate));
-  return;
-}
-
 void UNOR4CAN::set_can_bitrate(const uint32_t bitrate) {
 
   can_bitrate = bitrate;

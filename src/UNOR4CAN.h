@@ -17,7 +17,6 @@
 #include <cstdint>
 #include <tuple>
 
-#include "api/HardwareCAN.h"
 #include "bsp_api.h"
 #include "r_can.h"
 
@@ -44,7 +43,7 @@ public:
   bool begin(void);
   void end(void);
 
-  void set_can_bitrate(const CanBitRate bitrate);
+  // void set_can_bitrate(const CanBitRate bitrate);
   void set_can_bitrate(const uint32_t bitrate);
   void set_callback(void (*fptr)(can_callback_args_t *args));
 
