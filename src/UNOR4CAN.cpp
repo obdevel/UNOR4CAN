@@ -354,7 +354,7 @@ void UNOR4CAN::set_debug(const bool state) {
 /// get CAN stats
 /// fsp_err_t R_CAN_InfoGet(can_ctrl_t * const p_api_ctrl, can_info_t * const p_info);
 
-bool UNOR4CAN::get_stats(can_info_t *pstats) {
+bool UNOR4CAN::get_info(can_info_t *pstats) {
 
   fsp_err_t ok;
 

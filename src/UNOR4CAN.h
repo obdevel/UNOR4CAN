@@ -53,7 +53,7 @@ public:
   int disableInternalLoopback();
 
   void set_debug(const bool state);
-  bool get_stats(can_info_t *pstats);
+  bool get_info(can_info_t *pstats);
 
   // this function is used by the library and should NOT be called by the user
   void onCanCallback2(can_callback_args_t *p_args);
